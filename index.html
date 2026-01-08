@@ -83,48 +83,76 @@ button{
   margin-top:8px;
 }
 
-/* COUNTDOWN */
+/* COUNTDOWN – ŞEFFAF */
 #countdown{
   position:fixed;
   inset:0;
   display:none;
   align-items:center;
   justify-content:center;
-  background:rgba(255,250,240,.9);
+  pointer-events:none;
   z-index:999;
 }
 #countNum{
   font-family:'Baloo 2',cursive;
   font-size:140px;
   color:#fb7185;
+  text-shadow:0 10px 30px rgba(0,0,0,.15);
   animation:pulse .6s infinite alternate;
 }
 @keyframes pulse{
   from{transform:scale(1)}
-  to{transform:scale(1.15)}
+  to{transform:scale(1.18)}
 }
 
-/* SAÇILAN MOTİFLER */
+/* MOTİFLER */
 .motif{
   position:fixed;
-  z-index:998;
+  z-index:500;
   animation:float 4s ease-in-out infinite;
 }
 @keyframes float{
   0%{transform:translate(0,0) rotate(0deg)}
-  50%{transform:translate(20px,-30px) rotate(180deg)}
-  100%{transform:translate(-20px,20px) rotate(360deg)}
+  50%{transform:translate(25px,-35px) rotate(180deg)}
+  100%{transform:translate(-25px,25px) rotate(360deg)}
 }
 
 /* ATLI KARINCA */
 .carousel{
   position:fixed;
   font-size:42px;
-  animation:spin 4s linear infinite;
+  z-index:400;
+  animation:spin 3s linear infinite;
 }
 @keyframes spin{
   from{transform:rotate(0deg)}
   to{transform:rotate(360deg)}
+}
+
+/* KONFETİ */
+.confetti{
+  position:fixed;
+  width:8px;
+  height:14px;
+  background:red;
+  z-index:900;
+  animation:confettiFall 2.5s ease-out forwards;
+}
+@keyframes confettiFall{
+  from{transform:translateY(0) rotate(0deg);opacity:1}
+  to{transform:translateY(100vh) rotate(720deg);opacity:0}
+}
+
+/* FİŞEK */
+.firework{
+  position:fixed;
+  font-size:32px;
+  z-index:950;
+  animation:boom 1.2s ease-out forwards;
+}
+@keyframes boom{
+  from{transform:scale(.2);opacity:1}
+  to{transform:scale(2.5);opacity:0}
 }
 </style>
 </head>
@@ -175,15 +203,14 @@ function clean(text){
 
 function spawnMotifs(){
   const icons=["🐥","🐦","🎈","✨","🐣","🎀"];
-  for(let i=0;i<30;i++){
+  for(let i=0;i<25;i++){
     const m=document.createElement("div");
     m.className="motif";
     m.textContent=icons[Math.floor(Math.random()*icons.length)];
     m.style.left=Math.random()*100+"vw";
     m.style.top=Math.random()*100+"vh";
-    m.style.fontSize=(16+Math.random()*36)+"px";
+    m.style.fontSize=(16+Math.random()*40)+"px";
     document.body.appendChild(m);
-    setTimeout(()=>m.remove(),5000);
   }
 }
 
@@ -195,7 +222,34 @@ function spawnCarousels(){
     c.style.left=Math.random()*80+"vw";
     c.style.top=Math.random()*80+"vh";
     document.body.appendChild(c);
-    setTimeout(()=>c.remove(),5000);
+  }
+}
+
+function clearDecor(){
+  document.querySelectorAll(".motif,.carousel").forEach(e=>e.remove());
+}
+
+function fireworks(){
+  for(let i=0;i<8;i++){
+    const f=document.createElement("div");
+    f.className="firework";
+    f.textContent="🎆";
+    f.style.left=(20+Math.random()*60)+"vw";
+    f.style.top=(20+Math.random()*40)+"vh";
+    document.body.appendChild(f);
+    setTimeout(()=>f.remove(),1200);
+  }
+}
+
+function confetti(){
+  const colors=["#fb7185","#facc15","#38bdf8","#4ade80"];
+  for(let i=0;i<80;i++){
+    const c=document.createElement("div");
+    c.className="confetti";
+    c.style.left=Math.random()*100+"vw";
+    c.style.background=colors[Math.floor(Math.random()*colors.length)];
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),2500);
   }
 }
 
@@ -209,28 +263,27 @@ function startDraw(){
   const num=document.getElementById("countNum");
   cd.style.display="flex";
 
-  let c=5;
-  num.textContent=c;
-
   spawnMotifs();
   spawnCarousels();
+
+  let c=5;
+  num.textContent=c;
 
   const timer=setInterval(()=>{
     c--;
     num.textContent=c;
-    spawnMotifs();
-    spawnCarousels();
 
     if(c===0){
       clearInterval(timer);
       cd.style.display="none";
-      result.style.display="block";
+      clearDecor();
+      fireworks();
+      confetti();
 
-      if(!eligible.length){
-        winner.textContent="😢 Uygun kimse yok";
-      }else{
-        winner.textContent="🎉 @" + eligible[Math.floor(Math.random()*eligible.length)] + " 🎉";
-      }
+      result.style.display="block";
+      winner.textContent = eligible.length
+        ? "🎉 @" + eligible[Math.floor(Math.random()*eligible.length)] + " 🎉"
+        : "😢 Uygun kimse yok";
     }
   },1000);
 }
