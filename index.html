@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Instagram Çekiliş Aracı</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{font-family:Arial;background:#0f172a;color:#e5e7eb;margin:0;padding:20px}
+h1{font-size:20px}
+textarea{width:100%;height:120px;background:#020617;color:#e5e7eb;border:1px solid #334155;border-radius:6px;padding:8px}
+button{margin-top:8px;padding:8px 12px;border:none;border-radius:6px;background:#22c55e;color:#022c22;font-weight:bold;cursor:pointer}
+button.secondary{background:#38bdf8;color:#022c22}
+.box{margin-top:14px;padding:10px;background:#020617;border:1px solid #334155;border-radius:8px}
+pre{white-space:pre-wrap}
+</style>
+</head>
+<body>
+
+<h1>Instagram Çekiliş (Manuel – Programsız)</h1>
+
+<div class="box">
+<b>Beğenenler</b>
+<textarea id="likes"></textarea>
+</div>
+
+<div class="box">
+<b>Yorum Yapanlar</b>
+<textarea id="comments"></textarea>
+</div>
+
+<div class="box">
+<b>Takipçiler</b>
+<textarea id="followers"></textarea>
+</div>
+
+<button onclick="run()">Ayıkla + Kazanan Seç</button>
+
+<div class="box">
+<b>Sonuç</b>
+<pre id="result"></pre>
+</div>
+
+<script>
+function extractUsers(text){
+  return [...new Set(
+    text
+      .toLowerCase()
+      .match(/@?[a-z0-9._]{3,30}/g)
+      ?.map(x=>x.replace(/^@/,""))
+  )] || [];
+}
+
+function run(){
+  const likes = extractUsers(document.getElementById("likes").value);
+  const comments = extractUsers(document.getElementById("comments").value);
+  const followers = extractUsers(document.getElementById("followers").value);
+
+  const eligible = likes.filter(u =>
+    comments.includes(u) && followers.includes(u)
+  );
+
+  let out = "";
+  out += "Likes: " + likes.length + "\n";
+  out += "Comments: " + comments.length + "\n";
+  out += "Followers: " + followers.length + "\n\n";
+  out += "Uygun Kişiler:\n" + eligible.join("\n") + "\n\n";
+
+  if(eligible.length){
+    const winner = eligible[Math.floor(Math.random()*eligible.length)];
+    out += "KAZANAN: @" + winner;
+  }else{
+    out += "Kazanan yok (kesişim boş)";
+  }
+
+  document.getElementById("result").textContent = out;
+}
+</script>
+
+</body>
+</html>
