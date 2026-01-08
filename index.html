@@ -2,79 +2,153 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Instagram Çekiliş Aracı</title>
+<title>Anlattugbacim – Kruvasan Fular Çekilişi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+
 <style>
-body{font-family:Arial;background:#0f172a;color:#e5e7eb;margin:0;padding:20px}
-h1{font-size:20px}
-textarea{width:100%;height:120px;background:#020617;color:#e5e7eb;border:1px solid #334155;border-radius:6px;padding:8px}
-button{margin-top:8px;padding:8px 12px;border:none;border-radius:6px;background:#22c55e;color:#022c22;font-weight:bold;cursor:pointer}
-button.secondary{background:#38bdf8;color:#022c22}
-.box{margin-top:14px;padding:10px;background:#020617;border:1px solid #334155;border-radius:8px}
-pre{white-space:pre-wrap}
+body{
+  margin:0;
+  font-family:'Nunito',sans-serif;
+  background:linear-gradient(135deg,#fff1f2,#fefce8);
+  color:#4b2e2b;
+}
+.container{
+  max-width:820px;
+  margin:auto;
+  padding:24px;
+}
+.poster{
+  background:#fff;
+  border-radius:28px;
+  padding:24px;
+  box-shadow:0 20px 40px rgba(0,0,0,.12);
+  border:6px dashed #fbbf24;
+}
+h1{
+  font-family:'Baloo 2',cursive;
+  text-align:center;
+  font-size:32px;
+  margin:0 0 6px;
+}
+.subtitle{
+  text-align:center;
+  font-size:16px;
+  margin-bottom:20px;
+}
+.section{
+  background:#fff7ed;
+  border-radius:20px;
+  padding:16px;
+  margin-bottom:14px;
+}
+label{
+  font-weight:700;
+  display:block;
+  margin-bottom:6px;
+}
+textarea{
+  width:100%;
+  min-height:80px;
+  border-radius:14px;
+  border:2px solid #fde68a;
+  padding:10px;
+  font-size:14px;
+  resize:vertical;
+}
+button{
+  width:100%;
+  margin-top:14px;
+  padding:14px;
+  font-size:18px;
+  border:none;
+  border-radius:999px;
+  background:linear-gradient(135deg,#fb7185,#facc15);
+  color:#4b2e2b;
+  font-weight:800;
+  cursor:pointer;
+}
+.result{
+  margin-top:18px;
+  background:#ecfeff;
+  border-radius:20px;
+  padding:16px;
+  text-align:center;
+}
+.winner{
+  font-family:'Baloo 2',cursive;
+  font-size:26px;
+  margin-top:8px;
+}
+.small{
+  font-size:13px;
+  opacity:.8;
+}
 </style>
 </head>
+
 <body>
+<div class="container">
+  <div class="poster">
+    <h1>🧶🥐 Anlattugbacim</h1>
+    <div class="subtitle">🎉 Kruvasan Fular Çekilişi 🎉</div>
 
-<h1>Instagram Çekiliş (Manuel – Programsız)</h1>
+    <div class="section">
+      <label>❤️ Postu Beğenenler</label>
+      <textarea id="likes" placeholder="@ali, ayse.34, caner_1907"></textarea>
+    </div>
 
-<div class="box">
-<b>Beğenenler</b>
-<textarea id="likes"></textarea>
-</div>
+    <div class="section">
+      <label>💬 Yorum Yapanlar</label>
+      <textarea id="comments" placeholder="@ali, mehmet, ayse.34"></textarea>
+    </div>
 
-<div class="box">
-<b>Yorum Yapanlar</b>
-<textarea id="comments"></textarea>
-</div>
+    <div class="section">
+      <label>⭐ Hesabı Takip Edenler</label>
+      <textarea id="followers" placeholder="ali, ayse.34, caner_1907"></textarea>
+    </div>
 
-<div class="box">
-<b>Takipçiler</b>
-<textarea id="followers"></textarea>
-</div>
+    <button onclick="draw()">🎪 Şans Çarkını Çevir 🎪</button>
 
-<button onclick="run()">Ayıkla + Kazanan Seç</button>
-
-<div class="box">
-<b>Sonuç</b>
-<pre id="result"></pre>
+    <div class="result" id="result" style="display:none">
+      <div class="small">Çekiliş Sonucu</div>
+      <div class="winner" id="winner"></div>
+    </div>
+  </div>
 </div>
 
 <script>
-function extractUsers(text){
+function clean(text){
   return [...new Set(
     text
       .toLowerCase()
-      .match(/@?[a-z0-9._]{3,30}/g)
-      ?.map(x=>x.replace(/^@/,""))
-  )] || [];
+      .split(",")
+      .map(x=>x.trim().replace(/^@/,""))
+      .filter(x=>x.length>2)
+  )];
 }
 
-function run(){
-  const likes = extractUsers(document.getElementById("likes").value);
-  const comments = extractUsers(document.getElementById("comments").value);
-  const followers = extractUsers(document.getElementById("followers").value);
+function draw(){
+  const likes = clean(document.getElementById("likes").value);
+  const comments = clean(document.getElementById("comments").value);
+  const followers = clean(document.getElementById("followers").value);
 
   const eligible = likes.filter(u =>
     comments.includes(u) && followers.includes(u)
   );
 
-  let out = "";
-  out += "Likes: " + likes.length + "\n";
-  out += "Comments: " + comments.length + "\n";
-  out += "Followers: " + followers.length + "\n\n";
-  out += "Uygun Kişiler:\n" + eligible.join("\n") + "\n\n";
+  const resultBox = document.getElementById("result");
+  const winnerBox = document.getElementById("winner");
 
-  if(eligible.length){
-    const winner = eligible[Math.floor(Math.random()*eligible.length)];
-    out += "KAZANAN: @" + winner;
+  if(!eligible.length){
+    winnerBox.innerHTML = "😢 Uygun kimse yok";
   }else{
-    out += "Kazanan yok (kesişim boş)";
+    const winner = eligible[Math.floor(Math.random()*eligible.length)];
+    winnerBox.innerHTML = "🎉 @" + winner + " 🎉";
   }
 
-  document.getElementById("result").textContent = out;
+  resultBox.style.display="block";
 }
 </script>
-
 </body>
 </html>
