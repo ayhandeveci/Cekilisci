@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Anlattugbacim – Kruvasan Fular Çekilişi</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+
 <style>
   body{margin:0;font-family:'Nunito',sans-serif;background:linear-gradient(135deg,#fff7ed,#fef3c7);color:#4b2e2b;overflow:hidden}
+  canvas{position:fixed;inset:0;pointer-events:none;z-index:10}
   .container{max-width:820px;margin:auto;padding:12px;position:relative;z-index:2}
-  .poster{background:#fff;border-radius:26px;padding:14px;border:5px dashed #fbbf24;box-shadow:0 20px 40px rgba(0,0,0,.13)}
+  .poster{background:#fff;border-radius:26px;padding:14px;border:5px dashed #fbbf24;box-shadow:0 18px 36px rgba(0,0,0,.13)}
   h1{font-family:'Baloo 2',cursive;text-align:center;font-size:28px;margin:0}
   .subtitle{text-align:center;font-size:15px;margin:8px 0 12px}
   .section{background:#fff7ed;border-radius:18px;padding:12px;margin-bottom:10px}
@@ -19,11 +22,17 @@
   .result{margin-top:12px;background:#ecfeff;border-radius:18px;padding:12px;text-align:center;display:none}
   .winner{font-family:'Baloo 2',cursive;font-size:22px;margin-top:6px}
 
+  /* geri sayım – dokunmadım */
   #countdown{position:fixed;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none;z-index:20}
   #countNum{font-family:'Baloo 2',cursive;font-size:130px;color:#fb7185;text-shadow:0 16px 50px rgba(0,0,0,.22);animation:pulse .55s infinite alternate}
   @keyframes pulse{from{transform:scale(1)}to{transform:scale(1.22)}}
 
-  canvas{position:fixed;inset:0;pointer-events:none;z-index:10}
+  @media (max-width:430px){
+    .container{padding:12px}
+    .poster{padding:14px}
+    h1{font-size:28px}
+    #countNum{font-size:130px}
+  }
 </style>
 </head>
 <body>
@@ -39,10 +48,12 @@
       <label>❤️ Postu Beğenenler (virgülle)</label>
       <textarea id="likes" placeholder="@ali, ayse.34, caner_1907"></textarea>
     </div>
+
     <div class="section">
       <label>💬 Yorum Yapanlar (virgülle)</label>
       <textarea id="comments" placeholder="@ali, mehmet, ayse.34"></textarea>
     </div>
+
     <div class="section">
       <label>⭐ Takip Edenler (virgülle)</label>
       <textarea id="followers" placeholder="ali, ayse.34, caner_1907"></textarea>
@@ -60,7 +71,8 @@
 <div id="countdown"><div id="countNum">5</div></div>
 
 <script>
-/* ===== UTIL ===== */
+/* ===== helpers ===== */
+const R=(a,b)=>Math.random()*(b-a)+a;
 function clean(text){
   return [...new Set(
     text.toLowerCase().split(",")
@@ -68,19 +80,17 @@ function clean(text){
       .filter(x=>x.length>2)
   )];
 }
-const R=(a,b)=>Math.random()*(b-a)+a;
 
-/* ===== CANVAS ===== */
-const canvas=document.getElementById("fx");
-const ctx=canvas.getContext("2d");
-let W,H, DPR=1;
+/* ===== canvas ===== */
+const canvas = document.getElementById("fx");
+const ctx = canvas.getContext("2d", { alpha:true });
 
+let W=0,H=0, DPR=1;
 function resize(){
   DPR = Math.min(2, window.devicePixelRatio || 1);
-  W = window.innerWidth;
-  H = window.innerHeight;
-  canvas.width = Math.floor(W * DPR);
-  canvas.height = Math.floor(H * DPR);
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = Math.floor(W*DPR);
+  canvas.height = Math.floor(H*DPR);
   canvas.style.width = W+"px";
   canvas.style.height = H+"px";
   ctx.setTransform(DPR,0,0,DPR,0,0);
@@ -88,66 +98,88 @@ function resize(){
 window.addEventListener("resize", resize);
 resize();
 
-/* ===== PERF MODE ===== */
+/* ===== perf presets ===== */
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-const SPARKS_PER_FIREWORK = isMobile ? 120 : 170;   // düşür -> akıcı
-const CONFETTI_PER_BURST  = isMobile ? 120 : 180;
-const SHADOW = isMobile ? 10 : 14;
+const FPS_CAP = isMobile ? 45 : 60;          // mobilde nefes aldır
+const SALVO_TOTAL = isMobile ? 4 : 6;
+const SPARKS_PER = isMobile ? 90 : 130;      // KASMA BİTTİ
+const CONFETTI_PER = isMobile ? 120 : 180;
+const MAX_PARTICLES = 1600;                  // güvenlik
 
-/* ===== FX STATE ===== */
-let sparks=[], rings=[], confetti=[], croissants=[];
+/* ===== pre-rendered glow sprite (fast!) ===== */
+function makeGlowSprite(){
+  const s = document.createElement("canvas");
+  s.width = 64; s.height = 64;
+  const g = s.getContext("2d");
+  const grd = g.createRadialGradient(32,32,0,32,32,32);
+  grd.addColorStop(0, "rgba(255,255,255,1)");
+  grd.addColorStop(0.15, "rgba(255,255,255,0.9)");
+  grd.addColorStop(0.35, "rgba(255,255,255,0.35)");
+  grd.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = grd;
+  g.beginPath(); g.arc(32,32,32,0,Math.PI*2); g.fill();
+  return s;
+}
+const glow = makeGlowSprite();
+
+/* ===== state ===== */
 let countdownRunning=false;
+let croissants=[];
 
-/* ===== DEV KRUVA SANLAR (ön planda, dans) ===== */
+let confetti=[];
+let sparks=[];
+let rings=[];
+
+function hardCap(){
+  // taşarsa eskileri kırp (kasmayı öldürür)
+  const total = confetti.length + sparks.length + rings.length;
+  if(total > MAX_PARTICLES){
+    sparks.splice(0, Math.max(0, total - MAX_PARTICLES));
+  }
+}
+
+/* ===== big dancing croissants during countdown ===== */
 function startCroissants(){
   croissants=[];
-  for(let i=0;i<9;i++){
+  const n = isMobile ? 7 : 10;
+  for(let i=0;i<n;i++){
     croissants.push({
       x:R(0,W), y:R(0,H),
-      r:R(80,220),
+      r:R(90,240),
       a:R(0,Math.PI*2),
-      va:R(-0.018,0.018),
-      size:R(140,230),
+      va:R(-0.02,0.02),
+      size:R(150,240),
       t:R(0,Math.PI*2),
-      bob:R(18,45)
+      bob:R(18,50)
     });
   }
 }
 function drawCroissants(){
-  ctx.save();
   for(const c of croissants){
-    c.a+=c.va;
-    c.t+=0.055;
-    const xx = c.x + Math.cos(c.a)*c.r;
-    const yy = c.y + Math.sin(c.a)*c.r + Math.sin(c.t)*c.bob;
-    const s = 0.9 + 0.22*Math.sin(c.t);
-    const rot = Math.sin(c.t)*0.25 + c.a*0.15;
+    c.a += c.va;
+    c.t += 0.055;
+    const x = c.x + Math.cos(c.a)*c.r;
+    const y = c.y + Math.sin(c.a)*c.r + Math.sin(c.t)*c.bob;
+    const s = 0.92 + 0.22*Math.sin(c.t);
 
-    ctx.translate(xx,yy);
-    ctx.rotate(rot);
+    ctx.save();
+    ctx.translate(x,y);
     ctx.scale(s,s);
-
-    ctx.shadowBlur = 18;
-    ctx.shadowColor = "rgba(0,0,0,.18)";
     ctx.globalAlpha = 0.95;
     ctx.font = `${c.size}px sans-serif`;
     ctx.fillText("🥐", -c.size*0.30, c.size*0.32);
-
-    ctx.setTransform(DPR,0,0,DPR,0,0);
-    ctx.setTransform(DPR,0,0,DPR,0,0); // noop safeguard
-    ctx.setTransform(1,0,0,1,0,0);
+    ctx.restore();
   }
-  ctx.restore();
 }
 
-/* ===== CONFETTI (hafif ama canlı) ===== */
-function burstConfetti(x,y){
-  for(let i=0;i<CONFETTI_PER_BURST;i++){
+/* ===== confetti ===== */
+function burstConfetti(x,y,amount=CONFETTI_PER){
+  for(let i=0;i<amount;i++){
     confetti.push({
       x,y,
       vx:R(-9,9),
       vy:R(-14,-2),
-      g:0.38,
+      g:0.36,
       s:R(3.5,8.5),
       r:R(0,Math.PI),
       vr:R(-0.22,0.22),
@@ -157,66 +189,50 @@ function burstConfetti(x,y){
   }
 }
 
-/* ===== FIREWORK (akıcı + vurucu) ===== */
+/* ===== FIREWORK (fast version) ===== */
 function firework(x,y){
-  const hue=R(0,360);
-  rings.push({x,y,r:0,alpha:1,hue,max:R(220,320)});
-  for(let i=0;i<SPARKS_PER_FIREWORK;i++){
-    const a=Math.random()*Math.PI*2;
-    const sp=R(4.5,12.5);
+  const hue = R(0,360);
+
+  // ring (cheap)
+  rings.push({x,y,r:0,life:28,hue});
+
+  // sparks (sprite-based)
+  for(let i=0;i<SPARKS_PER;i++){
+    const a = Math.random()*Math.PI*2;
+    const sp = R(4.8, 12.8);
     sparks.push({
       x,y,
       vx:Math.cos(a)*sp,
       vy:Math.sin(a)*sp,
       g:0.055,
       drag:0.985,
-      life:R(60,110),
-      hue:(hue+R(-18,18)+360)%360
+      life:R(55,100),
+      hue:(hue + R(-22,22) + 360)%360,
+      size:R(10,18)
     });
   }
+  hardCap();
 }
 
-/* ===== RENDER ===== */
-function tick(){
-  ctx.clearRect(0,0,W,H);
-
-  // countdown sırasında kruvasanlar
-  if(countdownRunning) drawCroissants();
-
-  // confetti
-  for(const c of confetti){
-    c.vy += c.g;
-    c.x  += c.vx;
-    c.y  += c.vy;
-    c.r  += c.vr;
-    c.life -= 1;
-
-    ctx.save();
-    ctx.translate(c.x,c.y);
-    ctx.rotate(c.r);
-    ctx.fillStyle = `hsla(${c.hue},95%,60%,${Math.max(0,c.life/120)})`;
-    ctx.fillRect(-c.s/2,-c.s/2,c.s,c.s*1.5);
-    ctx.restore();
-  }
-  confetti = confetti.filter(c=>c.life>0 && c.y<H+60);
-
-  // fireworks (glow without heavy cost)
+function drawFireworks(){
+  // additive but no shadow blur
   ctx.save();
-  ctx.globalCompositeOperation="lighter";
+  ctx.globalCompositeOperation = "lighter";
 
+  // rings
   for(const r of rings){
-    r.r += 10;
-    r.alpha -= 0.02;
+    r.r += 12;
+    r.life -= 1;
+    const a = Math.max(0, r.life/28);
     ctx.beginPath();
     ctx.arc(r.x,r.y,r.r,0,Math.PI*2);
-    ctx.lineWidth = 8;
-    ctx.shadowBlur = SHADOW;
-    ctx.shadowColor = `hsla(${r.hue},100%,70%,${Math.max(0,r.alpha)})`;
-    ctx.strokeStyle = `hsla(${r.hue},100%,70%,${Math.max(0,r.alpha)})`;
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = `hsla(${r.hue},100%,70%,${a})`;
     ctx.stroke();
   }
-  rings = rings.filter(r=>r.alpha>0 && r.r<r.max);
+  rings = rings.filter(r=>r.life>0);
 
+  // sparks
   for(const s of sparks){
     s.vx *= s.drag;
     s.vy *= s.drag;
@@ -224,46 +240,91 @@ function tick(){
     s.x += s.vx;
     s.y += s.vy;
     s.life -= 1;
+    const a = Math.max(0, s.life/100);
 
-    const a = Math.max(0, s.life/110);
-    ctx.beginPath();
-    ctx.moveTo(s.x, s.y);
-    ctx.lineTo(s.x - s.vx*2.0, s.y - s.vy*2.0);
-    ctx.lineWidth = 2.2;
-    ctx.shadowBlur = SHADOW;
-    ctx.shadowColor = `hsla(${s.hue},100%,70%,${a})`;
-    ctx.strokeStyle = `hsla(${s.hue},100%,70%,${a})`;
-    ctx.stroke();
+    // tint sprite via fillRect overlay trick: draw sprite then colorize by drawing colored rect with source-atop
+    // Faster approach: set globalAlpha + drawImage twice (colored feel via HSL stroke)
+    ctx.globalAlpha = a;
+
+    // colored core (cheap)
+    ctx.fillStyle = `hsla(${s.hue},100%,70%,${a})`;
+    ctx.fillRect(s.x, s.y, 1.5, 1.5);
+
+    // glow sprite
+    const half = s.size/2;
+    // We fake color by drawing sprite + a light colored dot; looks vivid without expensive ops
+    ctx.drawImage(glow, s.x - half, s.y - half, s.size, s.size);
   }
   sparks = sparks.filter(s=>s.life>0);
 
   ctx.restore();
+}
+
+/* ===== draw loop (fps capped) ===== */
+let last = 0;
+const frameMs = 1000 / FPS_CAP;
+
+function tick(ts){
+  if(!last) last = ts;
+  const dt = ts - last;
+  if(dt < frameMs){ requestAnimationFrame(tick); return; }
+  last = ts;
+
+  ctx.clearRect(0,0,W,H);
+
+  // countdown vibe
+  if(countdownRunning) drawCroissants();
+
+  // confetti (normal)
+  for(const c of confetti){
+    c.vy += c.g;
+    c.x += c.vx;
+    c.y += c.vy;
+    c.r += c.vr;
+    c.life -= 1;
+    const a = Math.max(0, c.life/120);
+
+    ctx.save();
+    ctx.translate(c.x,c.y);
+    ctx.rotate(c.r);
+    ctx.fillStyle = `hsla(${c.hue},95%,60%,${a})`;
+    ctx.fillRect(-c.s/2,-c.s/2,c.s,c.s*1.5);
+    ctx.restore();
+  }
+  confetti = confetti.filter(c=>c.life>0 && c.y < H+60);
+
+  // fireworks
+  drawFireworks();
 
   requestAnimationFrame(tick);
 }
-tick();
+requestAnimationFrame(tick);
 
-/* ===== FLOW ===== */
+/* ===== FINAL SHOW ===== */
 function finalShow(){
-  // salvo: arka arkaya, ama hafif
-  let n=0;
-  const total = isMobile ? 4 : 6;
-  const gap = isMobile ? 420 : 320;
+  // ilk BAM
+  firework(W/2, H*0.22);
+  firework(R(W*0.25,W*0.75), R(H*0.10,H*0.35));
+  burstConfetti(W/2, H*0.28, CONFETTI_PER + 40);
 
-  const salvo = setInterval(()=>{
-    const x = R(W*0.15, W*0.85);
+  let n = 0;
+  const gap = isMobile ? 430 : 330;
+  const t = setInterval(()=>{
+    const x = R(W*0.12, W*0.88);
     const y = R(H*0.10, H*0.42);
     firework(x,y);
-    if(n%2===0) burstConfetti(R(W*0.2,W*0.8), R(H*0.12,H*0.45));
+    if(n%2===0) burstConfetti(R(W*0.2,W*0.8), R(H*0.12,H*0.45), CONFETTI_PER);
     n++;
-    if(n>=total) clearInterval(salvo);
+    if(n>=SALVO_TOTAL) clearInterval(t);
   }, gap);
-
-  // ilk patlama daha büyük hissi
-  firework(W/2, H*0.22);
-  firework(R(W*0.25,W*0.75), R(H*0.12,H*0.35));
-  burstConfetti(W/2, H*0.28);
 }
+
+/* ===== app flow ===== */
+const likesBox=document.getElementById("likes");
+const commentsBox=document.getElementById("comments");
+const followersBox=document.getElementById("followers");
+const result=document.getElementById("result");
+const winner=document.getElementById("winner");
 
 function startDraw(){
   const btn=document.getElementById("btn");
@@ -274,6 +335,7 @@ function startDraw(){
   const followers=clean(followersBox.value);
   const eligible=likes.filter(u=>comments.includes(u)&&followers.includes(u));
 
+  // countdown decorations (as requested: DO NOT TOUCH) + croissants
   startCroissants();
 
   const cd=document.getElementById("countdown");
@@ -287,6 +349,7 @@ function startDraw(){
   const timer=setInterval(()=>{
     c--;
     num.textContent=c;
+
     if(c===0){
       clearInterval(timer);
       cd.style.display="none";
@@ -300,16 +363,10 @@ function startDraw(){
         ? "🎉 @" + eligible[Math.floor(Math.random()*eligible.length)] + " 🎉"
         : "😢 Uygun kimse yok";
 
-      setTimeout(()=>btn.disabled=false,1200);
+      setTimeout(()=>btn.disabled=false, 1200);
     }
   },1000);
 }
-
-const likesBox=document.getElementById("likes");
-const commentsBox=document.getElementById("comments");
-const followersBox=document.getElementById("followers");
-const result=document.getElementById("result");
-const winner=document.getElementById("winner");
 </script>
 
 </body>
