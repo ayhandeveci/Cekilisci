@@ -4,138 +4,31 @@
 <meta charset="UTF-8">
 <title>Anlattugbacim – Kruvasan Fular Çekilişi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
-
 <style>
-/* ===== BASE ===== */
-body{
-  margin:0;
-  font-family:'Nunito',sans-serif;
-  background:linear-gradient(135deg,#fff7ed,#fef3c7);
-  color:#4b2e2b;
-  overflow:hidden;
-}
+  body{margin:0;font-family:'Nunito',sans-serif;background:linear-gradient(135deg,#fff7ed,#fef3c7);color:#4b2e2b;overflow:hidden}
+  .container{max-width:820px;margin:auto;padding:12px;position:relative;z-index:2}
+  .poster{background:#fff;border-radius:26px;padding:14px;border:5px dashed #fbbf24;box-shadow:0 20px 40px rgba(0,0,0,.13)}
+  h1{font-family:'Baloo 2',cursive;text-align:center;font-size:28px;margin:0}
+  .subtitle{text-align:center;font-size:15px;margin:8px 0 12px}
+  .section{background:#fff7ed;border-radius:18px;padding:12px;margin-bottom:10px}
+  label{font-weight:800;display:block;margin-bottom:6px}
+  textarea{width:100%;min-height:52px;border-radius:14px;border:2px solid #fde68a;padding:10px;font-size:14px}
+  button{width:100%;margin-top:12px;padding:13px;font-size:17px;border:none;border-radius:999px;background:linear-gradient(135deg,#fb7185,#facc15);color:#4b2e2b;font-weight:900;cursor:pointer}
+  button:disabled{opacity:.6}
+  .result{margin-top:12px;background:#ecfeff;border-radius:18px;padding:12px;text-align:center;display:none}
+  .winner{font-family:'Baloo 2',cursive;font-size:22px;margin-top:6px}
 
-/* ===== UI ===== */
-.container{
-  max-width:820px;
-  margin:auto;
-  padding:20px;
-  position:relative;
-  z-index:2;
-}
-.poster{
-  background:#fff;
-  border-radius:28px;
-  padding:22px;
-  border:6px dashed #fbbf24;
-  box-shadow:0 25px 45px rgba(0,0,0,.15);
-}
-h1{
-  font-family:'Baloo 2',cursive;
-  text-align:center;
-  font-size:32px;
-  margin:0;
-}
-.subtitle{
-  text-align:center;
-  font-size:16px;
-  margin-bottom:16px;
-}
-.section{
-  background:#fff7ed;
-  border-radius:20px;
-  padding:14px;
-  margin-bottom:10px;
-}
-label{
-  font-weight:800;
-  display:block;
-  margin-bottom:6px;
-}
-textarea{
-  width:100%;
-  min-height:52px;
-  border-radius:14px;
-  border:2px solid #fde68a;
-  padding:10px;
-  font-size:14px;
-}
-button{
-  width:100%;
-  margin-top:14px;
-  padding:14px;
-  font-size:18px;
-  border:none;
-  border-radius:999px;
-  background:linear-gradient(135deg,#fb7185,#facc15);
-  color:#4b2e2b;
-  font-weight:900;
-  cursor:pointer;
-}
-button:disabled{opacity:.6}
-.result{
-  margin-top:14px;
-  background:#ecfeff;
-  border-radius:20px;
-  padding:14px;
-  text-align:center;
-  display:none;
-}
-.winner{
-  font-family:'Baloo 2',cursive;
-  font-size:24px;
-  margin-top:6px;
-}
+  #countdown{position:fixed;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none;z-index:20}
+  #countNum{font-family:'Baloo 2',cursive;font-size:130px;color:#fb7185;text-shadow:0 16px 50px rgba(0,0,0,.22);animation:pulse .55s infinite alternate}
+  @keyframes pulse{from{transform:scale(1)}to{transform:scale(1.22)}}
 
-/* ===== COUNTDOWN (DOKUNULMADI) ===== */
-#countdown{
-  position:fixed;
-  inset:0;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  pointer-events:none;
-  z-index:20;
-}
-#countNum{
-  font-family:'Baloo 2',cursive;
-  font-size:140px;
-  color:#fb7185;
-  text-shadow:0 16px 50px rgba(0,0,0,.22);
-  animation:pulse .55s infinite alternate;
-}
-@keyframes pulse{
-  from{transform:scale(1)}
-  to{transform:scale(1.22)}
-}
-
-/* ===== CANVAS LAYERS ===== */
-canvas{
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-}
-#fxBack{z-index:6}   /* FİŞEK + KONFETİ (PANELİN ÜSTÜNDE) */
-#fxFront{z-index:10} /* DEV KRUVA SAN + FULAR (EN ÖNDE) */
-
-/* ===== MOBILE SCALE ===== */
-@media (max-width: 430px){
-  .container{padding:12px}
-  .poster{padding:14px;border-width:5px}
-  h1{font-size:28px}
-  .subtitle{font-size:15px;margin-bottom:12px}
-  button{font-size:17px;padding:13px}
-  #countNum{font-size:130px}
-}
+  canvas{position:fixed;inset:0;pointer-events:none;z-index:10}
 </style>
 </head>
-
 <body>
 
-<canvas id="fxBack"></canvas>
-<canvas id="fxFront"></canvas>
+<canvas id="fx"></canvas>
 
 <div class="container">
   <div class="poster">
@@ -144,15 +37,15 @@ canvas{
 
     <div class="section">
       <label>❤️ Postu Beğenenler (virgülle)</label>
-      <textarea id="likes"></textarea>
+      <textarea id="likes" placeholder="@ali, ayse.34, caner_1907"></textarea>
     </div>
     <div class="section">
       <label>💬 Yorum Yapanlar (virgülle)</label>
-      <textarea id="comments"></textarea>
+      <textarea id="comments" placeholder="@ali, mehmet, ayse.34"></textarea>
     </div>
     <div class="section">
       <label>⭐ Takip Edenler (virgülle)</label>
-      <textarea id="followers"></textarea>
+      <textarea id="followers" placeholder="ali, ayse.34, caner_1907"></textarea>
     </div>
 
     <button id="btn" onclick="startDraw()">🎪 Şans Çarkını Çevir 🎪</button>
@@ -175,126 +68,203 @@ function clean(text){
       .filter(x=>x.length>2)
   )];
 }
-function rand(min,max){return Math.random()*(max-min)+min}
+const R=(a,b)=>Math.random()*(b-a)+a;
 
-/* ===== CANVAS SETUP ===== */
-const back = document.getElementById("fxBack");
-const b = back.getContext("2d");
-const front = document.getElementById("fxFront");
-const f = front.getContext("2d");
+/* ===== CANVAS ===== */
+const canvas=document.getElementById("fx");
+const ctx=canvas.getContext("2d");
+let W,H, DPR=1;
 
-let W,H;
 function resize(){
-  W=back.width=front.width=window.innerWidth;
-  H=back.height=front.height=window.innerHeight;
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = Math.floor(W * DPR);
+  canvas.height = Math.floor(H * DPR);
+  canvas.style.width = W+"px";
+  canvas.style.height = H+"px";
+  ctx.setTransform(DPR,0,0,DPR,0,0);
 }
-window.addEventListener("resize",resize);
+window.addEventListener("resize", resize);
 resize();
 
-/* ===== STATE ===== */
-let confetti=[], rings=[], sparks=[];
-let croissants=[];
-let countdownRunning=false;
-let salvoTimer=null;
+/* ===== PERF MODE ===== */
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+const SPARKS_PER_FIREWORK = isMobile ? 120 : 170;   // düşür -> akıcı
+const CONFETTI_PER_BURST  = isMobile ? 120 : 180;
+const SHADOW = isMobile ? 10 : 14;
 
-/* ===== DEV KRUVA SANLAR (ÖN PLAN) ===== */
+/* ===== FX STATE ===== */
+let sparks=[], rings=[], confetti=[], croissants=[];
+let countdownRunning=false;
+
+/* ===== DEV KRUVA SANLAR (ön planda, dans) ===== */
 function startCroissants(){
   croissants=[];
-  for(let i=0;i<12;i++){
+  for(let i=0;i<9;i++){
     croissants.push({
-      x:rand(0,W),
-      y:rand(0,H),
-      r:rand(80,220),
-      a:rand(0,Math.PI*2),
-      va:rand(-0.02,0.02),
-      size:rand(140,240),
-      bob:rand(20,50),
-      t:rand(0,Math.PI*2)
+      x:R(0,W), y:R(0,H),
+      r:R(80,220),
+      a:R(0,Math.PI*2),
+      va:R(-0.018,0.018),
+      size:R(140,230),
+      t:R(0,Math.PI*2),
+      bob:R(18,45)
     });
   }
 }
 function drawCroissants(){
-  f.save();
+  ctx.save();
   for(const c of croissants){
     c.a+=c.va;
-    c.t+=0.05;
-    const x=c.x+Math.cos(c.a)*c.r;
-    const y=c.y+Math.sin(c.a)*c.r+Math.sin(c.t)*c.bob;
-    const scale=0.9+0.2*Math.sin(c.t);
-    f.translate(x,y);
-    f.scale(scale,scale);
-    f.font=`${c.size}px sans-serif`;
-    f.shadowBlur=22;
-    f.shadowColor="rgba(0,0,0,.2)";
-    f.fillText("🥐",-c.size*0.3,c.size*0.3);
-    f.setTransform(1,0,0,1,0,0);
+    c.t+=0.055;
+    const xx = c.x + Math.cos(c.a)*c.r;
+    const yy = c.y + Math.sin(c.a)*c.r + Math.sin(c.t)*c.bob;
+    const s = 0.9 + 0.22*Math.sin(c.t);
+    const rot = Math.sin(c.t)*0.25 + c.a*0.15;
+
+    ctx.translate(xx,yy);
+    ctx.rotate(rot);
+    ctx.scale(s,s);
+
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = "rgba(0,0,0,.18)";
+    ctx.globalAlpha = 0.95;
+    ctx.font = `${c.size}px sans-serif`;
+    ctx.fillText("🥐", -c.size*0.30, c.size*0.32);
+
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    ctx.setTransform(DPR,0,0,DPR,0,0); // noop safeguard
+    ctx.setTransform(1,0,0,1,0,0);
   }
-  f.restore();
+  ctx.restore();
 }
 
-/* ===== DEV FİŞEK ===== */
-function launchFirework(){
-  const x=rand(W*0.1,W*0.9);
-  const y=rand(H*0.1,H*0.4);
-  const hue=rand(0,360);
-  rings.push({x,y,r:0,max:420,hue,alpha:1});
-  for(let i=0;i<220;i++){
+/* ===== CONFETTI (hafif ama canlı) ===== */
+function burstConfetti(x,y){
+  for(let i=0;i<CONFETTI_PER_BURST;i++){
+    confetti.push({
+      x,y,
+      vx:R(-9,9),
+      vy:R(-14,-2),
+      g:0.38,
+      s:R(3.5,8.5),
+      r:R(0,Math.PI),
+      vr:R(-0.22,0.22),
+      life:R(70,120),
+      hue:R(0,360)
+    });
+  }
+}
+
+/* ===== FIREWORK (akıcı + vurucu) ===== */
+function firework(x,y){
+  const hue=R(0,360);
+  rings.push({x,y,r:0,alpha:1,hue,max:R(220,320)});
+  for(let i=0;i<SPARKS_PER_FIREWORK;i++){
     const a=Math.random()*Math.PI*2;
-    const sp=rand(5,14);
+    const sp=R(4.5,12.5);
     sparks.push({
       x,y,
       vx:Math.cos(a)*sp,
       vy:Math.sin(a)*sp,
-      g:0.05,
-      life:120,
-      hue,
-      w:rand(1.5,3)
+      g:0.055,
+      drag:0.985,
+      life:R(60,110),
+      hue:(hue+R(-18,18)+360)%360
     });
   }
 }
-function drawFireworks(){
-  b.save();
-  b.globalCompositeOperation="lighter";
-  for(const r of rings){
-    r.r+=12;
-    r.alpha-=0.015;
-    b.beginPath();
-    b.arc(r.x,r.y,r.r,0,Math.PI*2);
-    b.strokeStyle=`hsla(${r.hue},100%,70%,${r.alpha})`;
-    b.lineWidth=10;
-    b.shadowBlur=28;
-    b.shadowColor=`hsla(${r.hue},100%,70%,${r.alpha})`;
-    b.stroke();
+
+/* ===== RENDER ===== */
+function tick(){
+  ctx.clearRect(0,0,W,H);
+
+  // countdown sırasında kruvasanlar
+  if(countdownRunning) drawCroissants();
+
+  // confetti
+  for(const c of confetti){
+    c.vy += c.g;
+    c.x  += c.vx;
+    c.y  += c.vy;
+    c.r  += c.vr;
+    c.life -= 1;
+
+    ctx.save();
+    ctx.translate(c.x,c.y);
+    ctx.rotate(c.r);
+    ctx.fillStyle = `hsla(${c.hue},95%,60%,${Math.max(0,c.life/120)})`;
+    ctx.fillRect(-c.s/2,-c.s/2,c.s,c.s*1.5);
+    ctx.restore();
   }
-  rings=rings.filter(r=>r.alpha>0);
+  confetti = confetti.filter(c=>c.life>0 && c.y<H+60);
+
+  // fireworks (glow without heavy cost)
+  ctx.save();
+  ctx.globalCompositeOperation="lighter";
+
+  for(const r of rings){
+    r.r += 10;
+    r.alpha -= 0.02;
+    ctx.beginPath();
+    ctx.arc(r.x,r.y,r.r,0,Math.PI*2);
+    ctx.lineWidth = 8;
+    ctx.shadowBlur = SHADOW;
+    ctx.shadowColor = `hsla(${r.hue},100%,70%,${Math.max(0,r.alpha)})`;
+    ctx.strokeStyle = `hsla(${r.hue},100%,70%,${Math.max(0,r.alpha)})`;
+    ctx.stroke();
+  }
+  rings = rings.filter(r=>r.alpha>0 && r.r<r.max);
 
   for(const s of sparks){
-    s.vy+=s.g;
-    s.x+=s.vx;
-    s.y+=s.vy;
-    s.life--;
-    b.beginPath();
-    b.moveTo(s.x,s.y);
-    b.lineTo(s.x-s.vx*2,s.y-s.vy*2);
-    b.strokeStyle=`hsla(${s.hue},100%,70%,${s.life/120})`;
-    b.lineWidth=s.w;
-    b.stroke();
-  }
-  sparks=sparks.filter(s=>s.life>0);
-  b.restore();
-}
+    s.vx *= s.drag;
+    s.vy *= s.drag;
+    s.vy += s.g;
+    s.x += s.vx;
+    s.y += s.vy;
+    s.life -= 1;
 
-/* ===== LOOP ===== */
-function animate(){
-  b.clearRect(0,0,W,H);
-  f.clearRect(0,0,W,H);
-  drawFireworks();
-  if(countdownRunning) drawCroissants();
-  requestAnimationFrame(animate);
+    const a = Math.max(0, s.life/110);
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y);
+    ctx.lineTo(s.x - s.vx*2.0, s.y - s.vy*2.0);
+    ctx.lineWidth = 2.2;
+    ctx.shadowBlur = SHADOW;
+    ctx.shadowColor = `hsla(${s.hue},100%,70%,${a})`;
+    ctx.strokeStyle = `hsla(${s.hue},100%,70%,${a})`;
+    ctx.stroke();
+  }
+  sparks = sparks.filter(s=>s.life>0);
+
+  ctx.restore();
+
+  requestAnimationFrame(tick);
 }
-animate();
+tick();
 
 /* ===== FLOW ===== */
+function finalShow(){
+  // salvo: arka arkaya, ama hafif
+  let n=0;
+  const total = isMobile ? 4 : 6;
+  const gap = isMobile ? 420 : 320;
+
+  const salvo = setInterval(()=>{
+    const x = R(W*0.15, W*0.85);
+    const y = R(H*0.10, H*0.42);
+    firework(x,y);
+    if(n%2===0) burstConfetti(R(W*0.2,W*0.8), R(H*0.12,H*0.45));
+    n++;
+    if(n>=total) clearInterval(salvo);
+  }, gap);
+
+  // ilk patlama daha büyük hissi
+  firework(W/2, H*0.22);
+  firework(R(W*0.25,W*0.75), R(H*0.12,H*0.35));
+  burstConfetti(W/2, H*0.28);
+}
+
 function startDraw(){
   const btn=document.getElementById("btn");
   btn.disabled=true;
@@ -323,19 +293,14 @@ function startDraw(){
       countdownRunning=false;
       croissants=[];
 
-      let shots=0;
-      salvoTimer=setInterval(()=>{
-        launchFirework();
-        shots++;
-        if(shots>5) clearInterval(salvoTimer);
-      },360);
+      finalShow();
 
       result.style.display="block";
-      winner.textContent=eligible.length
-        ? "🎉 @"+eligible[Math.floor(Math.random()*eligible.length)]+" 🎉"
+      winner.textContent = eligible.length
+        ? "🎉 @" + eligible[Math.floor(Math.random()*eligible.length)] + " 🎉"
         : "😢 Uygun kimse yok";
 
-      setTimeout(()=>btn.disabled=false,1500);
+      setTimeout(()=>btn.disabled=false,1200);
     }
   },1000);
 }
