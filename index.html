@@ -4,13 +4,14 @@
 <meta charset="UTF-8">
 <title>Anlattugbacim – Kruvasan Fular Çekilişi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
 
 <style>
 body{
   margin:0;
   font-family:'Nunito',sans-serif;
-  background:linear-gradient(135deg,#fff1f2,#fefce8);
+  background:linear-gradient(135deg,#fff7ed,#fef3c7);
   color:#4b2e2b;
 }
 .container{
@@ -20,74 +21,116 @@ body{
 }
 .poster{
   background:#fff;
-  border-radius:28px;
-  padding:24px;
-  box-shadow:0 20px 40px rgba(0,0,0,.12);
+  border-radius:30px;
+  padding:26px;
   border:6px dashed #fbbf24;
+  box-shadow:0 25px 45px rgba(0,0,0,.15);
 }
 h1{
   font-family:'Baloo 2',cursive;
   text-align:center;
-  font-size:32px;
-  margin:0 0 6px;
+  font-size:34px;
+  margin:0;
 }
 .subtitle{
   text-align:center;
-  font-size:16px;
-  margin-bottom:20px;
+  font-size:18px;
+  margin-bottom:22px;
 }
 .section{
   background:#fff7ed;
-  border-radius:20px;
+  border-radius:22px;
   padding:16px;
   margin-bottom:14px;
 }
 label{
-  font-weight:700;
+  font-weight:800;
   display:block;
   margin-bottom:6px;
 }
 textarea{
   width:100%;
-  min-height:80px;
-  border-radius:14px;
+  min-height:70px;
+  border-radius:16px;
   border:2px solid #fde68a;
-  padding:10px;
+  padding:12px;
   font-size:14px;
-  resize:vertical;
 }
 button{
   width:100%;
-  margin-top:14px;
-  padding:14px;
-  font-size:18px;
+  margin-top:18px;
+  padding:16px;
+  font-size:20px;
   border:none;
   border-radius:999px;
   background:linear-gradient(135deg,#fb7185,#facc15);
   color:#4b2e2b;
-  font-weight:800;
+  font-weight:900;
   cursor:pointer;
 }
 .result{
   margin-top:18px;
   background:#ecfeff;
-  border-radius:20px;
-  padding:16px;
+  border-radius:24px;
+  padding:18px;
   text-align:center;
+  display:none;
 }
 .winner{
   font-family:'Baloo 2',cursive;
-  font-size:26px;
+  font-size:28px;
   margin-top:8px;
 }
-.small{
-  font-size:13px;
-  opacity:.8;
+
+/* COUNTDOWN */
+#countdown{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(255,250,240,.88);
+  backdrop-filter:blur(6px);
+  z-index:999;
+}
+#countNum{
+  font-family:'Baloo 2',cursive;
+  font-size:120px;
+  color:#fb7185;
+  animation:pulse .6s infinite alternate;
+}
+@keyframes pulse{
+  from{transform:scale(1)}
+  to{transform:scale(1.15)}
+}
+
+/* SHAKE */
+.shake{
+  animation:shake .4s infinite;
+}
+@keyframes shake{
+  0%{transform:rotate(0)}
+  25%{transform:rotate(.4deg)}
+  50%{transform:rotate(0)}
+  75%{transform:rotate(-.4deg)}
+}
+
+/* FLYING EMOJIS */
+.fly{
+  position:fixed;
+  font-size:28px;
+  z-index:998;
+  animation:fly 3s linear forwards;
+}
+@keyframes fly{
+  from{transform:translateY(110vh) rotate(0deg);opacity:1}
+  to{transform:translateY(-120vh) rotate(360deg);opacity:0}
 }
 </style>
 </head>
 
 <body>
+
 <div class="container">
   <div class="poster">
     <h1>🧶🥐 Anlattugbacim</h1>
@@ -108,47 +151,86 @@ button{
       <textarea id="followers" placeholder="ali, ayse.34, caner_1907"></textarea>
     </div>
 
-    <button onclick="draw()">🎪 Şans Çarkını Çevir 🎪</button>
+    <button onclick="startDraw()">🎪 Şans Çarkını Çevir 🎪</button>
 
-    <div class="result" id="result" style="display:none">
-      <div class="small">Çekiliş Sonucu</div>
+    <div class="result" id="result">
+      <div>🎊 Çekiliş Sonucu 🎊</div>
       <div class="winner" id="winner"></div>
     </div>
   </div>
 </div>
 
+<!-- COUNTDOWN -->
+<div id="countdown">
+  <div id="countNum">10</div>
+</div>
+
 <script>
 function clean(text){
   return [...new Set(
-    text
-      .toLowerCase()
-      .split(",")
+    text.toLowerCase().split(",")
       .map(x=>x.trim().replace(/^@/,""))
       .filter(x=>x.length>2)
   )];
 }
 
-function draw(){
-  const likes = clean(document.getElementById("likes").value);
-  const comments = clean(document.getElementById("comments").value);
-  const followers = clean(document.getElementById("followers").value);
-
-  const eligible = likes.filter(u =>
-    comments.includes(u) && followers.includes(u)
-  );
-
-  const resultBox = document.getElementById("result");
-  const winnerBox = document.getElementById("winner");
-
-  if(!eligible.length){
-    winnerBox.innerHTML = "😢 Uygun kimse yok";
-  }else{
-    const winner = eligible[Math.floor(Math.random()*eligible.length)];
-    winnerBox.innerHTML = "🎉 @" + winner + " 🎉";
+function spawn(){
+  const emojis=["🐥","🐦","🎈","🎠","✨","🐣"];
+  for(let i=0;i<18;i++){
+    const e=document.createElement("div");
+    e.className="fly";
+    e.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+    e.style.left=Math.random()*100+"vw";
+    e.style.animationDuration=(2+Math.random()*2)+"s";
+    document.body.appendChild(e);
+    setTimeout(()=>e.remove(),4000);
   }
-
-  resultBox.style.display="block";
 }
+
+function startDraw(){
+  const likes=clean(likesBox.value);
+  const comments=clean(commentsBox.value);
+  const followers=clean(followersBox.value);
+
+  const eligible=likes.filter(u=>comments.includes(u)&&followers.includes(u));
+
+  document.body.classList.add("shake");
+  spawn();
+
+  const cd=document.getElementById("countdown");
+  const num=document.getElementById("countNum");
+  cd.style.display="flex";
+
+  let c=10;
+  num.textContent=c;
+
+  const timer=setInterval(()=>{
+    c--;
+    num.textContent=c;
+    spawn();
+
+    if(c===0){
+      clearInterval(timer);
+      cd.style.display="none";
+      document.body.classList.remove("shake");
+
+      result.style.display="block";
+      if(!eligible.length){
+        winner.textContent="😢 Uygun kimse yok";
+      }else{
+        const w=eligible[Math.floor(Math.random()*eligible.length)];
+        winner.textContent="🎉 @" + w + " 🎉";
+      }
+    }
+  },800);
+}
+
+const likesBox=document.getElementById("likes");
+const commentsBox=document.getElementById("comments");
+const followersBox=document.getElementById("followers");
+const result=document.getElementById("result");
+const winner=document.getElementById("winner");
 </script>
+
 </body>
 </html>
