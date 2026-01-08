@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>Anlattugbacim – Kruvasan Fular Çekilişi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
 
 <style>
@@ -15,6 +14,8 @@
     color:#4b2e2b;
     overflow:hidden;
   }
+
+  /* UI */
   .container{max-width:820px;margin:auto;padding:24px;position:relative;z-index:2}
   .poster{
     background:#fff;border-radius:30px;padding:26px;border:6px dashed #fbbf24;
@@ -36,29 +37,31 @@
   .result{margin-top:18px;background:#ecfeff;border-radius:24px;padding:18px;text-align:center;display:none}
   .winner{font-family:'Baloo 2',cursive;font-size:28px;margin-top:8px}
 
-  /* COUNTDOWN – şeffaf */
+  /* COUNTDOWN – şeffaf, sayı en üstte */
   #countdown{
     position:fixed;inset:0;display:none;align-items:center;justify-content:center;
-    pointer-events:none;z-index:3;
+    pointer-events:none;z-index:20;
   }
   #countNum{
     font-family:'Baloo 2',cursive;
-    font-size:150px;
+    font-size:160px;
     color:#fb7185;
-    text-shadow:0 14px 40px rgba(0,0,0,.22);
+    text-shadow:0 16px 50px rgba(0,0,0,.22);
     animation:pulse .55s infinite alternate;
   }
   @keyframes pulse{from{transform:scale(1)}to{transform:scale(1.22)}}
 
-  canvas{position:fixed;inset:0;pointer-events:none;z-index:1}
-  #fxTop{z-index:4}
+  /* CANVAS LAYERS */
+  canvas{position:fixed;inset:0;pointer-events:none}
+  #fxBack{z-index:1}  /* fireworks/confetti */
+  #fxFront{z-index:10} /* DEV KRUVA SAN + fular ribbon panel üstünde */
 </style>
 </head>
 
 <body>
 
-<canvas id="fx"></canvas>
-<canvas id="fxTop"></canvas>
+<canvas id="fxBack"></canvas>
+<canvas id="fxFront"></canvas>
 
 <div class="container">
   <div class="poster">
@@ -101,191 +104,208 @@ function clean(text){
 function rand(min,max){return Math.random()*(max-min)+min}
 
 /* ===== CANVAS SETUP ===== */
-const fx = document.getElementById("fx");
-const ctx = fx.getContext("2d");
-const fxTop = document.getElementById("fxTop");
-const ctxTop = fxTop.getContext("2d");
+const back = document.getElementById("fxBack");
+const b = back.getContext("2d");
+const front = document.getElementById("fxFront");
+const f = front.getContext("2d");
 
 let W,H;
 function resize(){
-  W=fx.width=fxTop.width=window.innerWidth;
-  H=fx.height=fxTop.height=window.innerHeight;
+  W=back.width=front.width=window.innerWidth;
+  H=back.height=front.height=window.innerHeight;
 }
 window.addEventListener("resize",resize);
 resize();
 
 /* ===== STATE ===== */
-let confetti=[], rings=[], sparks=[], ribbons=[], croissants=[];
-let tension = 0;
+let confetti=[], rings=[], sparks=[];
+let ribbons=[], croissants=[];
+let tension=0;
 let countdownRunning=false;
 let salvoTimer=null;
 
-/* ===== BIG DANCING CROISSANTS (🥐) ===== */
+/* ===== DEV KRUVA SANLAR (ÖN PLAN) ===== */
 function startCroissants(){
   croissants = [];
-  const n = 10; // more croissants
+  const n = 14; // daha fazla kruvasan
   for(let i=0;i<n;i++){
     croissants.push({
-      cx: rand(W*0.15,W*0.85),
-      cy: rand(H*0.18,H*0.78),
-      r: rand(40,140),
+      // panelin üstünde de gezsin: tüm ekran
+      cx: rand(W*0.05,W*0.95),
+      cy: rand(H*0.05,H*0.95),
+      r: rand(60,220),
       a: rand(0,Math.PI*2),
-      va: rand(0.01,0.03) * (Math.random()<0.5?-1:1),
-      bob: rand(10,28),
+      va: rand(0.008,0.02) * (Math.random()<0.5?-1:1),
+      bob: rand(18,42),
       t: rand(0,Math.PI*2),
-      // BIG sizes
-      size: rand(60,115),
-      spin: rand(-0.06,0.06),
+      // DEV BOYUT
+      size: rand(130,220),
       scT: rand(0,Math.PI*2),
+      driftX: rand(-0.35,0.35),
+      driftY: rand(-0.25,0.25)
     });
   }
 }
-function drawCroissants(){
-  ctx.save();
+
+function drawCroissantsFront(){
+  // kruvasanlar panelin üstünde: front canvas
+  f.save();
   for(const c of croissants){
-    // speed increases with tension
-    c.a += c.va * (1 + tension*2.4);
-    c.t += 0.06 * (1 + tension*1.6);
+    // drift + orbit + dans
+    c.a += c.va * (1 + tension*2.8);
+    c.t += 0.05 * (1 + tension*1.8);
     c.scT += 0.08;
+
+    c.cx += c.driftX * (1 + tension*0.6);
+    c.cy += c.driftY * (1 + tension*0.6);
+
+    // ekrandan taşarsa geri sok
+    if(c.cx < -100) c.cx = W+100;
+    if(c.cx > W+100) c.cx = -100;
+    if(c.cy < -100) c.cy = H+100;
+    if(c.cy > H+100) c.cy = -100;
+
     const x = c.cx + Math.cos(c.a)*c.r;
     const y = c.cy + Math.sin(c.a)*c.r + Math.sin(c.t)*c.bob;
 
-    const scale = 0.95 + 0.18*Math.sin(c.scT); // dance (breathing)
-    const rot = (c.a*0.6) + Math.sin(c.t)*0.35 + c.spin*tension*8;
+    const scale = 0.92 + 0.22*Math.sin(c.scT); // dance
+    const rot = (Math.sin(c.t)*0.35) + (c.a*0.3); // twirl
 
-    ctx.translate(x,y);
-    ctx.rotate(rot);
-    ctx.scale(scale, scale);
-    ctx.font = `${c.size}px sans-serif`;
-    ctx.globalAlpha = 0.92;
-    ctx.fillText("🥐", -c.size*0.28, c.size*0.32);
-    ctx.setTransform(1,0,0,1,0,0);
+    f.translate(x,y);
+    f.rotate(rot);
+    f.scale(scale, scale);
+
+    // shadow/glow — daha “ön planda” hissi
+    f.shadowBlur = 22;
+    f.shadowColor = "rgba(0,0,0,.18)";
+    f.globalAlpha = 0.95;
+    f.font = `${c.size}px sans-serif`;
+    f.fillText("🥐", -c.size*0.30, c.size*0.32);
+
+    f.setTransform(1,0,0,1,0,0);
   }
-  ctx.restore();
+  f.restore();
 }
 
-/* ===== RIBBONS (fular vibe) ===== */
+/* ===== FULAR (RIBBON) — ÖN PLANDA ===== */
 function startRibbons(){
   ribbons = [];
   const n = 6;
   for(let i=0;i<n;i++){
     ribbons.push({
-      x: rand(W*0.1,W*0.9),
-      y: rand(H*0.18,H*0.85),
-      amp: rand(20,55),
-      len: rand(240,420),
-      w: rand(7,12),
+      x: rand(W*0.05,W*0.85),
+      y: rand(H*0.10,H*0.90),
+      amp: rand(22,60),
+      len: rand(260,520),
+      w: rand(8,14),
       phase: rand(0,Math.PI*2),
       speed: rand(0.03,0.07) * (Math.random()<0.5?-1:1),
       hue: rand(0,360)
     });
   }
 }
-function drawRibbons(){
+function drawRibbonsFront(){
   for(const r of ribbons){
-    r.phase += r.speed * (1 + tension*2.6);
-    ctxTop.save();
-    ctxTop.lineWidth = r.w;
-    ctxTop.lineCap = "round";
-    const grad = ctxTop.createLinearGradient(r.x, r.y, r.x+r.len, r.y);
-    grad.addColorStop(0, `hsla(${(r.hue+0)%360}, 95%, 65%, .85)`);
-    grad.addColorStop(0.5, `hsla(${(r.hue+45)%360}, 95%, 62%, .85)`);
-    grad.addColorStop(1, `hsla(${(r.hue+90)%360}, 95%, 60%, .85)`);
-    ctxTop.strokeStyle = grad;
+    r.phase += r.speed * (1 + tension*2.8);
 
-    ctxTop.beginPath();
-    const steps = 26;
+    f.save();
+    f.lineWidth = r.w;
+    f.lineCap = "round";
+
+    const grad = f.createLinearGradient(r.x, r.y, r.x+r.len, r.y);
+    grad.addColorStop(0, `hsla(${(r.hue+0)%360}, 95%, 65%, .80)`);
+    grad.addColorStop(0.5, `hsla(${(r.hue+45)%360}, 95%, 62%, .80)`);
+    grad.addColorStop(1, `hsla(${(r.hue+90)%360}, 95%, 60%, .80)`);
+    f.strokeStyle = grad;
+
+    f.beginPath();
+    const steps = 28;
     for(let i=0;i<=steps;i++){
       const t = i/steps;
       const xx = r.x + t*r.len;
-      const yy = r.y + Math.sin(r.phase + t*7.2) * r.amp * (1 + tension*1.8);
-      if(i===0) ctxTop.moveTo(xx,yy);
-      else ctxTop.lineTo(xx,yy);
+      const yy = r.y + Math.sin(r.phase + t*7.4) * r.amp * (1 + tension*1.9);
+      if(i===0) f.moveTo(xx,yy); else f.lineTo(xx,yy);
     }
-    ctxTop.stroke();
+
+    f.shadowBlur = 14;
+    f.shadowColor = "rgba(0,0,0,.10)";
+    f.stroke();
 
     // shimmer
-    ctxTop.globalCompositeOperation="lighter";
+    f.globalCompositeOperation="lighter";
     for(let i=0;i<7;i++){
       const t = i/7;
       const xx = r.x + t*r.len;
-      const yy = r.y + Math.sin(r.phase + t*7.2) * r.amp * (1 + tension*1.8);
-      ctxTop.fillStyle = `rgba(255,255,255,${0.18 + 0.35*Math.sin(r.phase+i)})`;
-      ctxTop.beginPath();
-      ctxTop.arc(xx,yy,2.4,0,Math.PI*2);
-      ctxTop.fill();
+      const yy = r.y + Math.sin(r.phase + t*7.4) * r.amp * (1 + tension*1.9);
+      f.fillStyle = `rgba(255,255,255,${0.14 + 0.30*Math.sin(r.phase+i)})`;
+      f.beginPath(); f.arc(xx,yy,2.6,0,Math.PI*2); f.fill();
     }
-    ctxTop.globalCompositeOperation="source-over";
-    ctxTop.restore();
+
+    f.restore();
   }
 }
 
 /* ===== CONFETTI ===== */
-function launchConfetti(burstX, burstY, amount=320){
+function launchConfetti(burstX, burstY, amount=340){
   for(let i=0;i<amount;i++){
     confetti.push({
       x: burstX, y: burstY,
-      vx: rand(-11,11),
-      vy: rand(-16,-3),
-      g: 0.38,
-      size: rand(4,10),
+      vx: rand(-12,12),
+      vy: rand(-18,-3),
+      g: 0.40,
+      size: rand(4,11),
       rot: rand(0,Math.PI),
-      vr: rand(-0.25,0.25),
-      life: rand(90,160),
+      vr: rand(-0.28,0.28),
+      life: rand(90,170),
       hue: rand(0,360)
     });
   }
 }
 
-/* ===== BIG, BRIGHT, COLORFUL FIREWORKS ===== */
+/* ===== DEV, PARLAK, RENKLİ FİŞEK ===== */
 function launchFireworkBig(){
-  const x = rand(W*0.12, W*0.88);
-  const y = rand(H*0.10, H*0.42);
+  const x = rand(W*0.10, W*0.90);
+  const y = rand(H*0.08, H*0.45);
   const hue = rand(0,360);
 
-  // shock rings (bigger + brighter)
-  rings.push({x,y,r:0, max: rand(220,340), hue, alpha:1});
-  rings.push({x,y,r:0, max: rand(180,280), hue:(hue+40)%360, alpha:0.85});
+  rings.push({x,y,r:0, max: rand(260,420), hue, alpha:1});
+  rings.push({x,y,r:0, max: rand(220,360), hue:(hue+50)%360, alpha:0.85});
 
-  // lots of sparks
-  const n = 220;
+  const n = 260;
   for(let i=0;i<n;i++){
-    const a = (Math.PI*2) * (i/n) + rand(-0.05,0.05);
-    const sp = rand(4.5, 13.0);
+    const a = (Math.PI*2) * (i/n) + rand(-0.06,0.06);
+    const sp = rand(5.0, 15.5);
     sparks.push({
       x, y,
       vx: Math.cos(a)*sp,
       vy: Math.sin(a)*sp,
       g: 0.06,
       drag: 0.985,
-      life: rand(70,140),
-      hue: (hue + rand(-20,20) + 360) % 360,
-      w: rand(1.6,3.2),
+      life: rand(80,160),
+      hue: (hue + rand(-25,25) + 360) % 360,
+      w: rand(1.8,3.6),
       alpha: 1
     });
   }
 }
 
-function drawFireworks(){
-  // additive glow
-  ctx.save();
-  ctx.globalCompositeOperation = "lighter";
+function drawFireworksBack(){
+  b.save();
+  b.globalCompositeOperation = "lighter";
 
-  // rings with blur glow
-  for(const f of rings){
-    f.r += 10;
-    f.alpha -= 0.014;
-    ctx.beginPath();
-    ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
-    ctx.strokeStyle = `hsla(${f.hue}, 100%, 70%, ${Math.max(0,f.alpha)})`;
-    ctx.lineWidth = 8;
-    ctx.shadowBlur = 18;
-    ctx.shadowColor = `hsla(${f.hue}, 100%, 70%, ${Math.max(0,f.alpha)})`;
-    ctx.stroke();
+  for(const r of rings){
+    r.r += 12;
+    r.alpha -= 0.012;
+    b.beginPath();
+    b.arc(r.x,r.y,r.r,0,Math.PI*2);
+    b.strokeStyle = `hsla(${r.hue}, 100%, 72%, ${Math.max(0,r.alpha)})`;
+    b.lineWidth = 10;
+    b.shadowBlur = 26;
+    b.shadowColor = `hsla(${r.hue}, 100%, 72%, ${Math.max(0,r.alpha)})`;
+    b.stroke();
   }
-  rings = rings.filter(f=>f.alpha>0 && f.r<f.max);
+  rings = rings.filter(r=>r.alpha>0 && r.r<r.max);
 
-  // sparks
   for(const s of sparks){
     s.vx *= s.drag;
     s.vy *= s.drag;
@@ -293,38 +313,35 @@ function drawFireworks(){
     s.x += s.vx;
     s.y += s.vy;
     s.life -= 1;
-    s.alpha = Math.max(0, s.life/140);
+    s.alpha = Math.max(0, s.life/160);
 
-    ctx.beginPath();
-    ctx.moveTo(s.x, s.y);
-    ctx.lineTo(s.x - s.vx*1.9, s.y - s.vy*1.9);
-    ctx.strokeStyle = `hsla(${s.hue}, 100%, 70%, ${s.alpha})`;
-    ctx.lineWidth = s.w;
-    ctx.shadowBlur = 16;
-    ctx.shadowColor = `hsla(${s.hue}, 100%, 70%, ${s.alpha})`;
-    ctx.stroke();
+    b.beginPath();
+    b.moveTo(s.x, s.y);
+    b.lineTo(s.x - s.vx*2.2, s.y - s.vy*2.2);
+    b.strokeStyle = `hsla(${s.hue}, 100%, 72%, ${s.alpha})`;
+    b.lineWidth = s.w;
+    b.shadowBlur = 22;
+    b.shadowColor = `hsla(${s.hue}, 100%, 72%, ${s.alpha})`;
+    b.stroke();
 
-    // hot core
-    ctx.fillStyle = `hsla(${(s.hue+10)%360}, 100%, 82%, ${s.alpha})`;
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, 1.9, 0, Math.PI*2);
-    ctx.fill();
+    b.fillStyle = `hsla(${(s.hue+10)%360}, 100%, 85%, ${s.alpha})`;
+    b.beginPath(); b.arc(s.x, s.y, 2.2, 0, Math.PI*2); b.fill();
   }
   sparks = sparks.filter(s=>s.life>0);
 
-  ctx.restore();
+  b.restore();
 }
 
 /* ===== LOOP ===== */
 function animate(){
-  ctx.clearRect(0,0,W,H);
-  ctxTop.clearRect(0,0,W,H);
+  b.clearRect(0,0,W,H);
+  f.clearRect(0,0,W,H);
 
   // tension ramps during countdown
   if(countdownRunning) tension = Math.min(1, tension + 0.02);
   else tension = Math.max(0, tension - 0.04);
 
-  // confetti physics
+  // confetti on back canvas (but visible)
   for(const p of confetti){
     p.vy += p.g;
     p.x += p.vx;
@@ -332,51 +349,47 @@ function animate(){
     p.rot += p.vr;
     p.life -= 1;
 
-    ctx.save();
-    ctx.translate(p.x,p.y);
-    ctx.rotate(p.rot);
-    ctx.fillStyle = `hsla(${p.hue}, 95%, 60%, ${Math.max(0,p.life/160)})`;
-    ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*1.5);
-    ctx.restore();
+    b.save();
+    b.translate(p.x,p.y);
+    b.rotate(p.rot);
+    b.fillStyle = `hsla(${p.hue}, 95%, 60%, ${Math.max(0,p.life/170)})`;
+    b.fillRect(-p.size/2,-p.size/2,p.size,p.size*1.6);
+    b.restore();
   }
-  confetti = confetti.filter(p=>p.life>0 && p.y < H+80);
+  confetti = confetti.filter(p=>p.life>0 && p.y < H+90);
 
-  // countdown vibes
+  // fireworks on back
+  drawFireworksBack();
+
+  // CRUCIAL: dev kruvasan + fular on FRONT canvas (panelin üstünde)
   if(countdownRunning){
-    drawCroissants();
-    drawRibbons();
+    drawRibbonsFront();
+    drawCroissantsFront();
   }
-
-  // fireworks always draw (final only spawns them)
-  drawFireworks();
 
   requestAnimationFrame(animate);
 }
 animate();
 
-/* ===== FLOW HELPERS ===== */
+/* ===== FLOW ===== */
 function clearAllFx(){
   confetti=[]; rings=[]; sparks=[]; ribbons=[]; croissants=[];
   if(salvoTimer){ clearInterval(salvoTimer); salvoTimer=null; }
 }
 
 function finalSalvos(){
-  // Arka arkaya “salvo” patlamaları: 5 kez
   let shots = 0;
-  const total = 5;        // kaç sefer
-  const gapMs = 380;      // aralık
+  const total = 6;     // kaç sefer arka arkaya
+  const gapMs = 360;   // aralık
 
-  // ilk anda biraz daha güçlü başla
-  launchFireworkBig(); launchFireworkBig();
-  launchConfetti(W/2, H*0.28, 520);
+  // ilk “BAM!”
+  launchFireworkBig(); launchFireworkBig(); launchFireworkBig();
+  launchConfetti(W/2, H*0.28, 560);
 
   salvoTimer = setInterval(()=>{
     shots++;
-    // her salvo: 2 büyük fişek
-    launchFireworkBig();
-    launchFireworkBig();
-    // küçük konfeti burstleri
-    launchConfetti(rand(W*0.2,W*0.8), rand(H*0.12,H*0.45), 220);
+    launchFireworkBig(); launchFireworkBig();
+    launchConfetti(rand(W*0.15,W*0.85), rand(H*0.10,H*0.45), 220);
 
     if(shots >= total){
       clearInterval(salvoTimer);
@@ -385,7 +398,6 @@ function finalSalvos(){
   }, gapMs);
 }
 
-/* ===== DRAW FLOW ===== */
 function startDraw(){
   const btn = document.getElementById("btn");
   btn.disabled = true;
@@ -416,6 +428,9 @@ function startDraw(){
       cd.style.display="none";
       countdownRunning = false;
 
+      // kruvasanlar geri sayım bitince ekrandan gitsin (sadece final fişek kalsın)
+      ribbons=[]; croissants=[];
+
       finalSalvos();
 
       result.style.display="block";
@@ -423,7 +438,7 @@ function startDraw(){
         ? "🎉 @" + eligible[Math.floor(Math.random()*eligible.length)] + " 🎉"
         : "😢 Uygun kimse yok";
 
-      setTimeout(()=>{ btn.disabled = false; }, 1500);
+      setTimeout(()=>{ btn.disabled = false; }, 1600);
     }
   },1000);
 }
